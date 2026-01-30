@@ -1,9 +1,9 @@
-sudo cp /var/lib/libvirt/images/debian-12-generic-arm64.qcow2_bkup /var/lib/libvirt/images/debian-12-generic-arm64.qcow2
+sudo cp /var/lib/libvirt/images/debian-12-generic-arm64.qcow2_bkup_resized /var/lib/libvirt/images/debian-12-generic-arm64.qcow2
 sudo virt-install \
   --name k8s-node-01 \
   --memory 512 \
   --vcpus 1 \
-  --disk path=/var/lib/libvirt/images/debian-12-generic-arm64.qcow2 \
+  --disk path=/var/lib/libvirt/images/debian-12-generic-arm64.qcow2,size=20 \
   --import \
   --osinfo detect=on,require=off \
   --network network=br0 \

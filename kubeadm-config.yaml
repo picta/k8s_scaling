@@ -1,9 +1,16 @@
 # kubeadm-config.yaml
-kind: ClusterConfiguration
-controlPlaneEndpoint: "k8s-rp.local:6443"
-clusterName: picta-plane
 apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+networking:
+  podSubnet: 10.244.0.0/16
+controlPlaneEndpoint: "k8s-rp:6443"
+clusterName: picta-plane
 kubernetesVersion: v1.34.1
+apiServer:
+  certSANs:
+  - "k8s-rp"
+  - "k8s-rp.local"
+  - "192.168.1.81"
 ---
 kind: KubeletConfiguration
 apiVersion: kubelet.config.k8s.io/v1beta1
