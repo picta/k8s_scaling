@@ -1,0 +1,47 @@
+#cloud-config
+hostname: k8s-node-01
+fqdn: k8s-node-01.example.com
+preserve_hostname: false
+manage_etc_hosts: true
+users:
+  - name: picta
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: users, admin
+    home: /home/picta
+    shell: /bin/bash
+    lock_passwd: false
+    ssh-authorized-keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCZ7WJwtCO9tXG+xuBtYH5AEWaOEwWSdUN/S36c7sg6sE2eFAK7TQZxkxM5tyyLcyRDZcbQTYAGKH+GtqbjwmT6hYfE0Gz4+FpN98/enBldJmQbutRS9pFKF7iEgxuuLuRDFXlyIjh4ATVPttyQKDS6H+m4swI5ZAlRFRPgwCXrfM7EecUs8V1JzioMZOXH0maopECf7YI9H91QHMA7mcerQPx8rCvzs0wSQpxS4qwuAYC8TEFt3cv6VI+i+5DXP2opPeehbJOarAvM9TW1eaSXCB0Xlb+nm/i1ETYpUkngPB9gXZAgaBrKjoVT1dvxiwDDEPe1oJHroJodLVvaxazRLI265bKUDSWNC9hMbojY/hNzn1a0/sV4JVqoDPWa7LzvPhTZUumfbWev/83EHTzpa4GsynYTxsAKwB5HaAEWcZmvVZhIvqMBhGEuKWzYPCFR5tfkFIDboLWLKPqia138U4i3tnmwTmrzkiD3XmhA2gAaiKMg96S9rw1eox6sjdk=
+# only cert auth via ssh (console access can still login)
+ssh_pwauth: false
+disable_root: false
+chpasswd:
+  list: |
+     picta:fuckoff
+  expire: False
+packages:
+  - qemu-guest-agent
+  - openssh-server
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - gpg
+# written to /var/log/cloud-init-output.log
+final_message: "The system is finally up, after $UPTIME seconds"
+
+
+runcmd:
+  - systemctl enable ssh
+  - systemctl start ssh
+  - mkdir -p /etc/apt/keyrings
+  - curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.34/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  - echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.34/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+  - sudo apt-get update
+  - sudo apt-get install -y kubelet kubeadm kubectl
+  - sudo apt install -y containerd
+  - echo "net.ipv4.ip_forward=1" | sudo tee -a /etc/sysctl.conf
+  - sudo sysctl -p
+  - sudo apt install avahi-daemon -y
+  - sudo systemctl enable avahi-daemon
+  - sudo systemctl start avahi-daemon
+  - kubeadm join k8s-rp.local:6443 --token gxmvev.lbz8yab76ora64ye --discovery-token-ca-cert-hash sha256:87027293f312e9ed2d3ddf3637892ff83251b1cc4c672ea265d935e4f6b7b9d9
