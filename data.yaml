@@ -1,6 +1,6 @@
 #cloud-config
-hostname: k8s-node-01
-fqdn: k8s-node-01.example.com
+hostname: k8s-node
+fqdn: k8s-node.example.com
 preserve_hostname: false
 manage_etc_hosts: true
 users:
@@ -26,22 +26,29 @@ packages:
   - ca-certificates
   - curl
   - gpg
-# written to /var/log/cloud-init-output.log
 final_message: "The system is finally up, after $UPTIME seconds"
 
 
 runcmd:
   - systemctl enable ssh
   - systemctl start ssh
+  - sudo modprobe br_netfilter
+  - echo "br_netfilter" | sudo tee /etc/modules-load.d/k8s.conf
+  - echo "net.ipv4.ip_forward=1" | sudo tee -a /etc/sysctl.conf
+  - sudo sysctl --system
   - mkdir -p /etc/apt/keyrings
   - curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.34/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
   - echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.34/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+  - export CRIO_VERSION=v1.34
+  - curl -fsSL https://download.opensuse.org/repositories/isv:/cri-o:/stable:/$CRIO_VERSION/deb/Release.key | gpg --dearmor | sudo tee /etc/apt/keyrings/cri-o-apt-keyring.gpg > /dev/null
+  - echo "deb [signed-by=/etc/apt/keyrings/cri-o-apt-keyring.gpg] https://download.opensuse.org/repositories/isv:/cri-o:/stable:/$CRIO_VERSION/deb/ /" | sudo tee /etc/apt/sources.list.d/cri-o.list
   - sudo apt-get update
+  - sudo apt-get install -y  cri-o
+  - sudo systemctl enable --now crio
   - sudo apt-get install -y kubelet kubeadm kubectl
-  - sudo apt install -y containerd
-  - echo "net.ipv4.ip_forward=1" | sudo tee -a /etc/sysctl.conf
-  - sudo sysctl -p
+  - MASTER_IP=$(getent hosts k8s-rp.local | awk '{ print $1 }')
+  - echo "$MASTER_IP k8s-rp k8s-rp.local" >> /etc/hosts
   - sudo apt install avahi-daemon -y
   - sudo systemctl enable avahi-daemon
   - sudo systemctl start avahi-daemon
-  - kubeadm join k8s-rp.local:6443 --token gxmvev.lbz8yab76ora64ye --discovery-token-ca-cert-hash sha256:87027293f312e9ed2d3ddf3637892ff83251b1cc4c672ea265d935e4f6b7b9d9
+  - sudo kubeadm join k8s-rp:6443 --token 3vvb6u.fhp6st4yv5rxkcrq --discovery-token-ca-cert-hash sha256:cf57f5d12d2ae9684464279a4cf605846478eaf10f3e957462ca97bc36bc534c
