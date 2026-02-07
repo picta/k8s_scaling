@@ -1,0 +1,270 @@
+
+1. Intro
+	Que es autoscaling?
+	Para explicarlo vamos a pensar en cómo solían ser las aplicaciones antes, tenias tu servidor fisico, y cuando tenía demasiada carga, habia que agregar más recursos, es por eso que si no se contaba con suficientes recursos para la carga, basicamente esa app moriria.
+
+
+
+2. Que es kubernetes?
+
+	K8s is an open source system for automating deployment, scaling, and management of containerized applications.
+	Como podemos ver, el autoscaling es solo una parte de lo que k8s hace, y es en lo que nos concentraremos hoy
+
+Kubernetes is a portable, extensible, open source platform for managing containerized workloads and services that facilitate both declarative configuration and automation. It has a large, rapidly growing ecosystem. Kubernetes services, support, and tools are widely available.
+This page is an overview of Kubernetes.
+
+The name Kubernetes originates from Greek, meaning helmsman or pilot. K8s as an abbreviation results from counting the eight letters between the "K" and the "s". Google open sourced the Kubernetes project in 2014. Kubernetes combines over 15 years of Google's experience running production workloads at scale with best-of-breed ideas and practices from the community.
+
+
+
+3. Herramientas Que necesitamos para correr un cluster de k8s
+
+	container runtime
+		containerd
+		CRI-O
+		Docker Engine
+		Mirantis Container Runtime
+
+		Prerequisitos:
+		Enable IPv4 packet forwarding
+		cgroupfs driver
+			cgroupfs (default)
+			systemd cgroup driver
+				apiVersion: kubelet.config.k8s.io/v1beta1
+				kind: KubeletConfiguration
+				...
+				cgroupDriver: systemd
+	
+	kubectl
+	kubeadm
+		Creates the cluster
+		Using kubeadm, you can create a minimum viable Kubernetes cluster that conforms to best practices. In fact, you can use kubeadm to set up a cluster that will pass the Kubernetes Conformance tests. kubeadm also supports other cluster lifecycle functions, such as bootstrap tokens and cluster upgrades.
+
+The kubeadm tool is good if you need:
+
+A simple way for you to try out Kubernetes, possibly for the first time.
+A way for existing users to automate setting up a cluster and test their application.
+A building block in other ecosystem and/or installer tools with a larger scope.
+You can install and use kubeadm on various machines: your laptop, a set of cloud servers, a Raspberry Pi, and more. Whether you're deploying into the cloud or on-premises, you can integrate kubeadm into provisioning systems such as Ansible or Terraform.
+
+
+4. Requerimientos tecnicos
+	One or more machines running a deb/rpm-compatible Linux OS; for example: Ubuntu or CentOS.
+	2 GiB or more of RAM per machine--any less leaves little room for your apps.
+	At least 2 CPUs on the machine that you use as a control-plane node.
+	Full network connectivity among all machines in the cluster. You can use either a public or a private network.
+
+
+5. Cluster architectire 
+
+	Podemos observar los componentes de un cluster de kubernetes
+	Control plane
+		api server
+			The API server is a component of the Kubernetes control plane that exposes the Kubernetes API. The API server is the front end for the Kubernetes control plane.
+
+The main implementation of a Kubernetes API server is kube-apiserver. kube-apiserver is designed to scale horizontally—that is, it scales by deploying more instances. You can run several instances of kube-apiserver and balance traffic between those instances.
+
+
+		etcd
+			Consistent and highly-available key value store used as Kubernetes' backing store for all cluster data.
+			If your Kubernetes cluster uses etcd as its backing store, make sure you have a back up plan for the data.
+
+		scheduler
+			Control plane component that watches for newly created Pods with no assigned node, and selects a node for them to run on.
+			Factors taken into account for scheduling decisions include: individual and collective resource requirements, hardware/software/policy constraints, affinity and anti-affinity specifications, data locality, inter-workload interference, and deadlines.
+
+		controller-manager
+			Control plane component that runs controller processes.
+
+Logically, each controller is a separate process, but to reduce complexity, they are all compiled into a single binary and run in a single process.
+
+There are many different types of controllers. Some examples of them are:
+
+Node controller: Responsible for noticing and responding when nodes go down.
+Job controller: Watches for Job objects that represent one-off tasks, then creates Pods to run those tasks to completion.
+EndpointSlice controller: Populates EndpointSlice objects (to provide a link between Services and Pods).
+ServiceAccount controller: Create default ServiceAccounts for new namespaces.
+The above is not an exhaustive list.
+
+
+		cloud-controller manager
+A Kubernetes control plane component that embeds cloud-specific control logic. The cloud controller manager lets you link your cluster into your cloud provider's API, and separates out the components that interact with that cloud platform from components that only interact with your cluster.
+The cloud-controller-manager only runs controllers that are specific to your cloud provider. If you are running Kubernetes on your own premises, or in a learning environment inside your own PC, the cluster does not have a cloud controller manager.
+
+As with the kube-controller-manager, the cloud-controller-manager combines several logically independent control loops into a single binary that you run as a single process. You can scale horizontally (run more than one copy) to improve performance or to help tolerate failures.
+
+The following controllers can have cloud provider dependencies:
+
+Node controller: For checking the cloud provider to determine if a node has been deleted in the cloud after it stops responding
+Route controller: For setting up routes in the underlying cloud infrastructure
+Service controller: For creating, updating and deleting cloud provider load balancers
+
+
+	Worker Node
+		kubelet
+			An agent that runs on each node in the cluster. It makes sure that containers are running in a Pod.
+The kubelet takes a set of PodSpecs that are provided through various mechanisms and ensures that the containers described in those PodSpecs are running and healthy. The kubelet doesn't manage containers which were not created by Kubernetes.
+
+			
+		container runtime
+			A fundamental component that empowers Kubernetes to run containers effectively. It is responsible for managing the execution and lifecycle of containers within the Kubernetes environment.
+
+Kubernetes supports container runtimes such as containerd, CRI-O, and any other implementation of the Kubernetes CRI (Container Runtime Interface).
+
+
+
+		kube-proxy(opcional)
+			kube-proxy is a network proxy that runs on each node in your cluster, implementing part of the Kubernetes Service concept.
+
+kube-proxy maintains network rules on nodes. These network rules allow network communication to your Pods from network sessions inside or outside of your cluster.
+
+kube-proxy uses the operating system packet filtering layer if there is one and it's available. Otherwise, kube-proxy forwards the traffic itself.
+
+If you use a network plugin that implements packet forwarding for Services by itself, and providing equivalent behavior to kube-proxy, then you do not need to run kube-proxy on the nodes in your cluster.
+
+
+6. Por que kubernetes?
+
+Containers are a good way to bundle and run your applications. In a production environment, you need to manage the containers that run the applications and ensure that there is no downtime. For example, if a container goes down, another container needs to start. Wouldn't it be easier if this behavior was handled by a system?
+
+That's how Kubernetes comes to the rescue! Kubernetes provides you with a framework to run distributed systems resiliently. It takes care of scaling and failover for your application, provides deployment patterns, and more. For example: Kubernetes can easily manage a canary deployment for your system.
+
+Kubernetes provides you with:
+
+Service discovery and load balancing Kubernetes can expose a container using a DNS name or their own IP address. If traffic to a container is high, Kubernetes is able to load balance and distribute the network traffic so that the deployment is stable.
+Storage orchestration Kubernetes allows you to automatically mount a storage system of your choice, such as local storage, public cloud providers, and more.
+Automated rollouts and rollbacks You can describe the desired state for your deployed containers using Kubernetes, and it can change the actual state to the desired state at a controlled rate. For example, you can automate Kubernetes to create new containers for your deployment, remove existing containers and adopt all their resources to the new container.
+Automatic bin packing You provide Kubernetes with a cluster of nodes that it can use to run containerized tasks. You tell Kubernetes how much CPU and memory (RAM) each container needs. Kubernetes can fit containers onto your nodes to make the best use of your resources.
+Self-healing Kubernetes restarts containers that fail, replaces containers, kills containers that don't respond to your user-defined health check, and doesn't advertise them to clients until they are ready to serve.
+Secret and configuration management Kubernetes lets you store and manage sensitive information, such as passwords, OAuth tokens, and SSH keys. You can deploy and update secrets and application configuration without rebuilding your container images, and without exposing secrets in your stack configuration.
+Batch execution In addition to services, Kubernetes can manage your batch and CI workloads, replacing containers that fail, if desired.
+Horizontal scaling Scale your application up and down with a simple command, with a UI, or automatically based on CPU usage.
+IPv4/IPv6 dual-stack Allocation of IPv4 and IPv6 addresses to Pods and Services
+Designed for extensibility Add features to your Kubernetes cluster without changing upstream source code.
+
+
+7. Objetos
+	Kubernetes objects are persistent entities in the Kubernetes system. Kubernetes uses these entities to represent the state of your cluster. Learn about the Kubernetes object model and how to work with these objects.
+	Kubernetes objects are persistent entities in the Kubernetes system. Kubernetes uses these entities to represent the state of your cluster. Specifically, they can describe:
+
+What containerized applications are running (and on which nodes)
+The resources available to those applications
+The policies around how those applications behave, such as restart policies, upgrades, and fault-tolerance
+A Kubernetes object is a "record of intent"--once you create the object, the Kubernetes system will constantly work to ensure that the object exists. By creating an object, you're effectively telling the Kubernetes system what you want your cluster's workload to look like; this is your cluster's desired state.
+
+To work with Kubernetes objects—whether to create, modify, or delete them—you'll need to use the Kubernetes API. When you use the kubectl command-line interface, for example, the CLI makes the necessary Kubernetes API calls for you. You can also use the Kubernetes API directly in your own programs using one of the Client Libraries.
+
+
+8. Workloads
+	Cargas de trabajo, antes de continuar quiero dejar claro que k8s es muy amplio, pudieramos hablar temas de 
+		seguridad, policies
+		networking,
+		storage
+			parte muy importante, puedo platicar de cuando le parti la mouser a un contenedor en IBM
+		administracion del cluster, upgrades
+		containers
+		servicios
+		balanceo de carga
+		configuracion
+
+	En donde recae la presentacion de hoy de scaling en cual de esos temas? en el area de workloads, manejo de cargas
+
+
+	WORKLOAD MANAGEMENT
+	Kubernetes provides several built-in APIs for declarative management of your workloads and the components of those workloads.
+
+	Ultimately, your applications run as containers inside Pods; however, managing individual Pods would be a lot of effort. For example, if a Pod fails, you probably want to run a new Pod to replace it. Kubernetes can do that for you.
+
+	You use the Kubernetes API to create a workload object that represents a higher abstraction level than a Pod, and then the Kubernetes control plane automatically manages Pod objects on your behalf, based on the specification for the workload object you defined.
+
+	The built-in APIs for managing workloads are:
+
+	Deployment (and, indirectly, ReplicaSet), the most common way to run an application on your cluster. Deployment is a good fit for managing a stateless application workload on your cluster, where any Pod in the Deployment is interchangeable and can be replaced if needed. (Deployments are a replacement for the legacy ReplicationController API).
+
+	A StatefulSet lets you manage one or more Pods – all running the same application code – where the Pods rely on having a distinct identity. This is different from a Deployment where the Pods are expected to be interchangeable. The most common use for a StatefulSet is to be able to make a link between its Pods and their persistent storage. For example, you can run a StatefulSet that associates each Pod with a PersistentVolume. If one of the Pods in the StatefulSet fails, Kubernetes makes a replacement Pod that is connected to the same PersistentVolume.
+
+	A DaemonSet defines Pods that provide facilities that are local to a specific node; for example, a driver that lets containers on that node access a storage system. You use a DaemonSet when the driver, or other node-level service, has to run on the node where it's useful. Each Pod in a DaemonSet performs a role similar to a system daemon on a classic Unix / POSIX server. A DaemonSet might be fundamental to the operation of your cluster, such as a plugin to let that node access cluster networking, it might help you to manage the node, or it could provide less essential facilities that enhance the container platform you are running. You can run DaemonSets (and their pods) across every node in your cluster, or across just a subset (for example, only install the GPU accelerator driver on nodes that have a GPU installed).
+
+	You can use a Job and / or a CronJob to define tasks that run to completion and then stop. A Job represents a one-off task, whereas each CronJob repeats according to a schedule.
+
+	WORKLOAD OBJECTS
+		Deployments
+			Deployment (and, indirectly, ReplicaSet), the most common way to run an application on your cluster. Deployment is a good fit for managing a stateless application workload on your cluster, where any Pod in the Deployment is interchangeable and can be replaced if needed. (Deployments are a replacement for the legacy ReplicationController API).
+
+
+		ReplicaSet
+			
+		StatefulSets
+			A StatefulSet lets you manage one or more Pods – all running the same application code – where the Pods rely on having a distinct identity. This is different from a Deployment where the Pods are expected to be interchangeable. The most common use for a StatefulSet is to be able to make a link between its Pods and their persistent storage. For example, you can run a StatefulSet that associates each Pod with a PersistentVolume. If one of the Pods in the StatefulSet fails, Kubernetes makes a replacement Pod that is connected to the same PersistentVolume.
+
+
+		DaemonSet
+			A DaemonSet defines Pods that provide facilities that are local to a specific node; for example, a driver that lets containers on that node access a storage system. You use a DaemonSet when the driver, or other node-level service, has to run on the node where it's useful. Each Pod in a DaemonSet performs a role similar to a system daemon on a classic Unix / POSIX server. A DaemonSet might be fundamental to the operation of your cluster, such as a plugin to let that node access cluster networking, it might help you to manage the node, or it could provide less essential facilities that enhance the container platform you are running. You can run DaemonSets (and their pods) across every node in your cluster, or across just a subset (for example, only install the GPU accelerator driver on nodes that have a GPU installed).
+
+
+		Jobs
+		CronJob
+			You can use a Job and / or a CronJob to define tasks that run to completion and then stop. A Job represents a one-off task, whereas each CronJob repeats according to a schedule.
+
+
+		ReplicationController
+			which one works for autoscaling? ninguno
+			no metion all of them
+
+
+WORKLOAD API
+	The Workload API resource allows you to describe the scheduling requirements and structure of a multi-Pod application. While workload controllers provide runtime behavior for the workloads, the Workload API is supposed to provide scheduling constraints for the "true" workloads, such as Job and others.
+
+
+WORKLOAD
+	The Workload API resource is part of the scheduling.k8s.io/v1alpha1 API group (and your cluster must have that API group enabled, as well as the GenericWorkload feature gate, before you can benefit from this API). This resource acts as a structured, machine-readable definition of the scheduling requirements of a multi-Pod application. While user-facing workloads like Jobs define what to run, the Workload resource determines how a group of Pods should be scheduled and how its placement should be managed throughout its lifecycle.
+
+
+You can link a Pod to a Workload object to indicate that the Pod belongs to a larger application or group. This enables the scheduler to make decisions based on the group's requirements rather than treating the Pod as an independent entity.
+
+
+
+
+Behavior 
+When you define a workloadRef, the Pod behaves differently depending on the policy defined in the referenced pod group.
+
+If the referenced group uses the basic policy, the workload reference acts primarily as a grouping label.
+If the referenced group uses the gang policy (and the GangScheduling feature gate is enabled), the Pod enters a gang scheduling lifecycle. It will wait for other Pods in the group to be created and scheduled before binding to a node.
+Missing references
+The scheduler validates the workloadRef before making any placement decisions.
+
+If a Pod references a Workload that does not exist, or a pod group that is not defined within that Workload, the Pod will remain pending. It is not considered for placement until you create the missing Workload object or recreate it to include the missing PodGroup definition.
+
+This behavior applies to all Pods with a workloadRef, regardless of whether the eventual policy will be basic or gang, as the scheduler requires the Workload definition to determine the policy.
+
+
+
+
+9. Scheduler
+		una vez que creas tu workload, y el controlador((Deployment / ReplicaSet / StatefulSet)) crea los pods
+		el scheduler decide en que node se crearan (allocate)
+	
+
+10. Scaling
+	Ya que nuestros workloads son definidos, ahora es momento de decidir que tantos?
+	Yo lo veo asi, creamos nuestras definiciones, por ejemplo un deployment,
+	quiero un nginx que corra en 2 pods, y hasta ahi, tu deployment intentara ser scheduleado
+
+
+	1. Scaling cluster infra
+		HPA = adding more nodes to the cluster
+		VPA = increasing resources on existing node
+
+
+	2. Scaling workloads
+		Horizontal = adding more pods
+		Vertical = increasing resources in the existing pods
+
+
+		MANUAL
+		AUTOMATIC
+
+
+
+
+
