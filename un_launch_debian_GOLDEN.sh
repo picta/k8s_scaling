@@ -31,7 +31,7 @@ kubectl get nodes \
     continue
   fi
 
-  # Final authority: drain simulation
+  # Drain simulation and delete
   if kubectl drain "$NODE" \
     --ignore-daemonsets \
     --delete-emptydir-data \
