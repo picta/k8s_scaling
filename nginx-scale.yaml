@@ -6,7 +6,7 @@ spec:
   scaleTargetRef:
     name: nginx-deployment
   pollingInterval: 15        # how often KEDA checks metrics
-  cooldownPeriod: 15         # wait 30s after load stops before scaling down
+  cooldownPeriod: 15         # wait 15s after load stops before scaling down
   minReplicaCount: 1
   maxReplicaCount: 4
   advanced:
