@@ -1,0 +1,25 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: nginx-scaler
+spec:
+  scaleTargetRef:
+    name: nginx-deployment
+  pollingInterval: 15        # how often KEDA checks metrics
+  cooldownPeriod: 15         # wait 30s after load stops before scaling down
+  minReplicaCount: 1
+  maxReplicaCount: 4
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 30   # override default 300s
+          policies:
+          - type: Percent
+            value: 100
+            periodSeconds: 15
+  triggers:
+  - type: cpu
+    metricType: Utilization
+    metadata:
+      value: "50"  # Scale when CPU > 50%

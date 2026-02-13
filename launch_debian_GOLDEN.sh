@@ -32,5 +32,5 @@ if [ -n "$PENDING" ]; then
       --graphics none
 
 else
-    echo "No pending nginx pods, nothing to do."
+    echo "No pending pods, nothing to do."
 fi
