@@ -1,6 +1,6 @@
 #cloud-config
-hostname: k8s-node
-fqdn: k8s-node.example.com
+hostname: $VM_NAME
+fqdn: $FQDN
 preserve_hostname: false
 manage_etc_hosts: true
 users:
